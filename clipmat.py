@@ -1,5 +1,6 @@
-import intervaltree
+from intervaltree import Interval, IntervalTree
 import numpy as np
+import sys
 
 """
 a simple cost estimation function
@@ -40,10 +41,10 @@ def find_min_cost(clips, i1):
     
     #organize into hashmap
     H = {}
-    minStart = int('inf')
+    minStart = sys.maxsize
     maxEnd = -1
     
-    indexed = zip(range(len(sclips), -1, -1), sclips)
+    indexed = zip(range(len(sclips)-1, -1, -1), sclips)
     for i,c in indexed:
         if c.begin < minStart:
             minStart = c.begin
@@ -60,15 +61,18 @@ def find_min_cost(clips, i1):
     clip_no = 0
     tot_cost = 0
     while i >= minStart:
-        if H[i] == None or len(H[i]) == 0:
+        print(i)
+        if not (i in H) or len(H[i]) == 0:
+            i -= 1
             continue
         else:
             clip_no += 1
-            min_cost = int('inf')
+            min_cost = sys.maxsize
             argmin_c = None
             for j,s in H[i]:
                 m_cost = estimate_Cost([i,s], cliplst, tot_cost)
                 tmp_cost = tot_cost + m_cost
+                print(j)
                 memo[j][clip_no] = tmp_cost
                 if tmp_cost < min_cost:
                     min_cost = tmp_cost
@@ -76,7 +80,7 @@ def find_min_cost(clips, i1):
             tot_cost += min_cost
             memo[argmin_c][clip_no] = tot_cost
             cliplst.append(sclips[argmin_c])
-        i -= 1
+            i -= 1
     return tot_cost,cliplst
 
 ivs = [(0,3),(3,7),(7,11),(11,15),(15,18),(18,20),(0,5),(5,7),(7,10),(10,14),(14,17),(17,20)]
