@@ -78,3 +78,10 @@ def find_min_cost(clips, i1):
             cliplst.append(sclips[argmin_c])
         i -= 1
     return tot_cost,cliplst
+
+ivs = [(0,3),(3,7),(7,11),(11,15),(15,18),(18,20),(0,5),(5,7),(7,10),(10,14),(14,17),(17,20)]
+i1 = [3,17]
+tcost,tlst = find_min_cost(tcost,tlst)
+print("Total Cost: " + str(tcost))
+print("List of Intervals: ")
+print(tlst)
