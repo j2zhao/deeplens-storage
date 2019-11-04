@@ -124,7 +124,7 @@ class FileSystemStorageManager(StorageManager):
 		physical_clip = os.path.join(self.basedir, name)
 
 		while True:
-
+			
 			try:
 				file = add_ext(physical_clip, '.seq', seq) 
 				size += sum(os.path.getsize(os.path.join(file,f)) for f in os.listdir(file))
