@@ -2,14 +2,10 @@
 is copyrighted by the University of Chicago. This project is developed by
 the database group (chidata).
 
-tiered_file.py contains the basic file I/O methods in the deeplens storage manager. It
-provies the basic routines for compressing and formatting video files on a tiered
-storage system.
-   
-The basic file format is as follows:
-* headers (labels/bounding boxes of objects in a particular frame), compressed 
-in gzip or bzip2
-* video (encoded in a supported encoding format)"""
+tiered_file.py contains basic functions for dealing with .ref directories.
+
+.ref directories contain a reference text file which states the directory
+of the video file."""
 
 import pickle
 import string
@@ -23,6 +19,8 @@ from dlstorage.filesystem.file import *
 from dlstorage.constants import *
 
 def is_ref_name(name):
+"""Check if a given name is a reference directory
+"""
     ext_name = name.split('/')[-1].split('.')[1]
     if ext_name == 'ref':
         return True
@@ -35,17 +33,25 @@ def is_ref_name(name):
  #   return ref_name
 
 def write_ref_file(ref_file, file_name):
+"""Args:
+        ref_file (string) - reference file
+        file_name (string) - name of external file
+"""
     f = open(ref_file, "w")
     f.write(file_name)
     f.close()
 
 def read_ref_file(ref_file):
+""" get external directory from reference file
+"""
     with open(ref_file, "r") as f:
         ref = f.readline()
         return ref
 
 
 def delete_ref_file(ref_file):
+""" delete reference file
+"""
     if os.path.exists(ref_file):
         os.remove(ref_file)
         return True

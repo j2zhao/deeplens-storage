@@ -2,8 +2,9 @@
 is copyrighted by the University of Chicago. This project is developed by
 the database group (chidata).
 
-videoio.py uses opencv (cv2) to read and write files to disk. It contains
-primitives to encode and decode archived and regular video formats.
+tiered_videoio.py uses opencv (cv2) to read and write files to disk. It contains
+primitives to encode and decode archived and regular video formats for a tiered
+storage system.
 """
 
 from dlstorage.filesystem.file import *
@@ -41,6 +42,8 @@ def write_video(vstream, \
         scratch - temporary space to use
         frame_rate - the frame_rate of the video
         header_cmp - compression if any on the header
+        output_extern - if the file goes to external 
+        storage, specify directory
     """
 
     # Define the codec and create VideoWriter object
@@ -119,7 +122,7 @@ def write_video_clips(vstream, \
     """write_video_clips takes a stream of video and writes
     it to disk. It includes the specified header 
     information as a part of the video file. The difference is that 
-    it writes a video to disk from a stream in clips of a specified 
+    it writes a video to disk/external storage from a stream in clips of a specified 
     size
 
     Args:
@@ -131,6 +134,8 @@ def write_video_clips(vstream, \
         scratch - temporary space to use
         frame_rate - the frame_rate of the video
         header_cmp - compression if any on the header
+        output_extern - if the file goes to external 
+        storage, specify directory
     """
 
     # Define the codec and create VideoWriter object
