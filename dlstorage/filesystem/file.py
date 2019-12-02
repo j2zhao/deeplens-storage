@@ -80,6 +80,21 @@ def write_block(data, path, name=None):
 	f.close()
 	return file_name
 
+def write_block_full_path(data, path):
+	"""Writes a dictionary of serializable data to a file.
+
+	Args:  
+		data (dict) - dictionary
+		path (string)- the full path name
+	"""
+	#open the file
+	f = open(path, 'wb')
+
+	pickle.dump(data, f)
+
+	f.close()
+	return file_name
+
 
 def read_block(file):
 	"""Reads a block from a specified data path.

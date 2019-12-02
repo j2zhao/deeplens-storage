@@ -20,6 +20,7 @@ from os import path
 import time
 import shutil
 from pathlib import Path
+import datetime
 
 
 def write_video(vstream, \
@@ -49,7 +50,6 @@ def write_video(vstream, \
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*encoding)
     start = True
-    tags = []
 
     #tmp file for the video
 
@@ -79,8 +79,6 @@ def write_video(vstream, \
         header.update(frame)
 
         out.write(frame['data'])
-        tags.append(frame['tags'])
-
         global_time_header.update(frame)
 
     if output_extern:
@@ -96,8 +94,10 @@ def write_video(vstream, \
                                     None ,\
                                     add_ext(output, '.start'))
     
+    header = header.getHeader()
+    header['seq'] = 0
     return [seg_start_file, \
-            build_fmt_file(header.getHeader(), \
+            build_fmt_file(header, \
                            file_name, \
                            scratch, \
                            add_ext(output, ext, 0), 
@@ -184,7 +184,9 @@ def write_video_clips(vstream, \
                 ext = '.ref'
             else:
                 ext = '.seq'
-            output_files.append(build_fmt_file(header.getHeader(), \
+            header_dict = header.getHeader()
+            header_dict['seq'] = seq
+            output_files.append(build_fmt_file(header_dict, \
                                                 file_name, \
                                                 scratch, \
                                                 add_ext(output, ext, seq), \
@@ -209,7 +211,9 @@ def write_video_clips(vstream, \
             ext = '.ref'
         else:
             ext = '.seq'
-        output_files.append(build_fmt_file(header.getHeader(), \
+        header_dict = header.getHeader()
+        header_dict['seq'] = seq
+        output_files.append(build_fmt_file(header_dict, \
                                                 file_name, \
                                                 scratch, \
                                                 add_ext(output, ext, seq), \
@@ -227,6 +231,14 @@ def write_video_clips(vstream, \
 
     return output_files
 
+
+def _update_storage_header(file_path, header_data):
+    header_data['last_accessed'] = datetime.now()
+    header_data['access_frequency'] += 1
+    if 'access_history' in header_data:
+        header_data['access_history'].append(datetime.now())
+    write_block_full_path(header_data, file_path)
+
 #gets a file of a particular index and if there are external files
 def _file_get(file):
     parsed = ncpy_unstack_block(file)
@@ -238,7 +250,7 @@ def _file_get(file):
 
     header = unstack_block(parsed[head], DEFAULT_TEMP, compression_hint=RAW)
     header_data = read_block(header[0])
-    return header_data, parsed[video], is_ref_name(file)
+    return header_data, parsed[video], is_ref_name(file), parsed[head]
 
 def _all_files(output):
     rtn = []
@@ -315,7 +327,7 @@ def move_to_extern_if(output, condition, output_extern, threads=None):
         pre_parsed = threads.map(_file_get, _all_files(output))
 
     rtn = None
-    for _, (header_data, clip, is_extern) in pre_parsed.items():
+    for _, (header_data, clip, is_extern, _) in pre_parsed.items():
         if condition(header_data):
             if not is_extern:
                 clip_file = os.path.basename(clip)
@@ -353,7 +365,7 @@ def move_from_extern_if(output, condition, threads=None):
         pre_parsed = threads.map(_file_get, _all_files(output))
 
     rtn = []
-    for _, (header_data, ref_file, is_extern) in pre_parsed.items():
+    for _, (header_data, ref_file, is_extern, _) in pre_parsed.items():
         if condition(header_data):
             if is_extern:
                 extern_dir = read_ref_file(ref_file)
@@ -393,7 +405,7 @@ def check_extern_if(output, condition, threads=None):
         pre_parsed = threads.map(_file_get, _all_files(output))
 
     rtn = []
-    for f, (header_data, clip, is_extern) in pre_parsed.items():
+    for f, (header_data, clip, is_extern, _) in pre_parsed.items():
         if condition(header_data):
             if is_extern:
                 return True
@@ -429,9 +441,11 @@ def read_if(output, condition, clip_size=5, scratch = DEFAULT_TEMP, threads=None
     else:
         pre_parsed = threads.map(_file_get, _all_files(output))
 
-    for header_data, clip, is_extern in pre_parsed:
+    for header_data, clip, is_extern, header_file in pre_parsed:
 
         if condition(header_data):
+            _update_storage_header(header_file, header_data)
+
             pstart, pend = find_clip_boundaries((header_data['start'], \
                                                  header_data['end']), \
                                                  clips)

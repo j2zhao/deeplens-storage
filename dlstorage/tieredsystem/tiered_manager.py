@@ -6,7 +6,7 @@ tiered.py defines file storage operations. These operations allows for
 complex file storage systems such as tiered storage, and easy file
 movement and access.
 
-"""
+""" 
 
 
 #TODO: Note, we ignored multi-threading for now
@@ -92,7 +92,7 @@ class TieredStorageManager(StorageManager):
             raise VideoNotFound(name + " not found in " + str(self.videos))
 
         physical_clip = os.path.join(self.basedir, name)
-        return read_if(physical_clip, condition, clip_size)
+        return read_if(physical_clip, condition, clip_size) #TODO: update header here
     
     def delete(self, name):
         disk_files = os.path.join(self.basedir, name)
@@ -115,9 +115,7 @@ class TieredStorageManager(StorageManager):
         raise ValueError("This storage manager does not support threading")
 
     def size(self, name):
-        """ Note: implementations need to be careful to specify 
-        if extern space or cache space is counted. Default is 
-        that it isn't counted
+        """ Extern space is counted in counting size.
         """
         seq = 0
         size = 0
@@ -135,7 +133,9 @@ class TieredStorageManager(StorageManager):
                 pass
             try:
                 file = add_ext(physical_clip, '.ref', seq) 
-                size += sum(os.path.getsize(os.path.join(file,f)) for f in os.listdir(file))
+                extern_dir = read_ref_file(file)
+                #size += sum(os.path.getsize(os.path.join(file,f)) for f in os.listdir(file))
+                size += sum(os.path.getsize(os.path.join(extern_dir,f)) for f in os.listdir(extern_dir))
                 seq += 1
                 continue
             except FileNotFoundError:
