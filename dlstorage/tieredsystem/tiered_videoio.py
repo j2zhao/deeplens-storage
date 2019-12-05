@@ -20,7 +20,7 @@ from os import path
 import time
 import shutil
 from pathlib import Path
-import datetime
+from datetime import datetime
 
 
 def write_video(vstream, \
@@ -154,11 +154,12 @@ def write_video_clips(vstream, \
             r_name = get_rnd_strng()
             if output_extern:
                 output_extern_seq = output_extern +  str(seq)
+                if not os.path.exists(output_extern_seq):
+                    os.mkdir(output_extern_seq)
                 seg_name = os.path.join(output_extern_seq, r_name)
             else:
                 seg_name = os.path.join(scratch, r_name)
             file_name = add_ext(seg_name, AVI, seq)
-
             fourcc = cv2.VideoWriter_fourcc(*encoding)
 
             out_vid = cv2.VideoWriter(file_name,
@@ -176,8 +177,9 @@ def write_video_clips(vstream, \
 
         if counter == clip_size:
             if output_extern:
-                output_extern_seq = output_extern +  str(seq)
-                ref_name = os.path.join(scratch, r_name)
+                ref_name = output_extern +  str(seq)
+                if not os.path.exists(output_extern_seq):
+                    os.mkdir(output_extern_seq)
                 ref_file = add_ext(ref_name, '.txt')
                 write_ref_file(ref_file, output_extern_seq)
                 file_name = ref_file #ref_file becomes the video
@@ -192,7 +194,7 @@ def write_video_clips(vstream, \
                                                 add_ext(output, ext, seq), \
                                                 header_cmp, \
                                                 RAW, 
-                                                seg_name))
+                                                r_name))
 
             header.reset()
             out_vid.release()
@@ -203,8 +205,11 @@ def write_video_clips(vstream, \
 
     if counter != 0:
         if output_extern:
-            output_extern_seq = output_extern +  str(seq + 1)
-            ref_name = os.path.join(scratch, r_name)
+            ref_name = output_extern +  str(seq)
+            if not os.path.exists(output_extern_seq):
+                os.mkdir(output_extern_seq)
+            #ref_name = os.path.join(scratch, r_name)
+            
             ref_file = add_ext(ref_name, '.txt')
             write_ref_file(ref_file, output_extern_seq)
             file_name = ref_file #ref_file becomes the video
@@ -219,7 +224,7 @@ def write_video_clips(vstream, \
                                                 add_ext(output, ext, seq), \
                                                 header_cmp, \
                                                 RAW, 
-                                                seg_name))
+                                                r_name))
 
         header.reset()
         out_vid.release()
@@ -240,7 +245,7 @@ def _update_storage_header(file_path, header_data):
     write_block_full_path(header_data, file_path)
 
 #gets a file of a particular index and if there are external files
-def _file_get(file):
+def file_get(file):
     parsed = ncpy_unstack_block(file)
     
     if '.head' in parsed[0]:
@@ -249,6 +254,7 @@ def _file_get(file):
         head, video = 1, 0
 
     header = unstack_block(parsed[head], DEFAULT_TEMP, compression_hint=RAW)
+    print(header)
     header_data = read_block(header[0])
     return header_data, parsed[video], is_ref_name(file), parsed[head]
 
@@ -282,7 +288,7 @@ def delete_video_if_exists(output):
 
     if not os.path.exists(start_file):
         return
-
+    print(output)
     os.remove(start_file)
     seq = 0
 
@@ -320,17 +326,17 @@ def move_to_extern_if(output, condition, output_extern, threads=None):
         condition (lambda) - a condition on the header content
         output_extern (string) - external url
     """
-    seq = 0
     if threads == None:
-        pre_parsed = {file: _file_get(file) for file in _all_files(output)}
+        pre_parsed = {file: file_get(file) for file in _all_files(output)}
     else:
-        pre_parsed = threads.map(_file_get, _all_files(output))
+        pre_parsed = threads.map(file_get, _all_files(output))
 
     rtn = None
     for _, (header_data, clip, is_extern, _) in pre_parsed.items():
         if condition(header_data):
             if not is_extern:
                 clip_file = os.path.basename(clip)
+                seq = header_data['seq']
                 extern_dir = output_extern + str(seq)
                 if not os.path.exists(extern_dir):
                     os.mkdir(extern_dir)
@@ -346,7 +352,7 @@ def move_to_extern_if(output, condition, output_extern, threads=None):
                 clip_string = add_ext(clip_string, '.txt')
                 ref_file = os.path.join(ref_dir, clip_string)
                 write_ref_file(ref_file, extern_dir)
-            rtn = ouput
+            rtn = output
     return rtn
 
 def move_from_extern_if(output, condition, threads=None):
@@ -358,11 +364,10 @@ def move_from_extern_if(output, condition, threads=None):
         condition (lambda) - a condition on the header content
         output_extern (string) - external directory
     """
-    seq = 0
     if threads == None:
-        pre_parsed = {file: _file_get(file) for file in _all_files(output)}
+        pre_parsed = {file: file_get(file) for file in _all_files(output)}
     else:
-        pre_parsed = threads.map(_file_get, _all_files(output))
+        pre_parsed = threads.map(file_get, _all_files(output))
 
     rtn = []
     for _, (header_data, ref_file, is_extern, _) in pre_parsed.items():
@@ -400,9 +405,9 @@ def check_extern_if(output, condition, threads=None):
     """
     seq = 0
     if threads == None:
-        pre_parsed = {file: _file_get(file) for file in _all_files(output)}
+        pre_parsed = {file: file_get(file) for file in _all_files(output)}
     else:
-        pre_parsed = threads.map(_file_get, _all_files(output))
+        pre_parsed = threads.map(file_get, _all_files(output))
 
     rtn = []
     for f, (header_data, clip, is_extern, _) in pre_parsed.items():
@@ -420,9 +425,7 @@ def read_if(output, condition, clip_size=5, scratch = DEFAULT_TEMP, threads=None
         output (string) - archive file
         condition (lambda) - a condition on the header content
         scratch (string) - a temporary file path
-    """
-    seq = 0
-    
+    """    
 
     #read the meta data
     #seg start data -> start data over entire video
@@ -437,19 +440,17 @@ def read_if(output, condition, clip_size=5, scratch = DEFAULT_TEMP, threads=None
     relevant_clips = set()
 
     if threads == None:
-        pre_parsed = [_file_get(file) for file in _all_files(output)]
+        pre_parsed = [file_get(file) for file in _all_files(output)]
     else:
-        pre_parsed = threads.map(_file_get, _all_files(output))
+        pre_parsed = threads.map(file_get, _all_files(output))
 
     for header_data, clip, is_extern, header_file in pre_parsed:
-
         if condition(header_data):
             _update_storage_header(header_file, header_data)
-
             pstart, pend = find_clip_boundaries((header_data['start'], \
                                                  header_data['end']), \
-                                                 clips)
-
+                                               clips)
+          
             for rel_clip in range(pstart, pend+1):
                     
                 cH = cut_header(header_data, clips[rel_clip][0], clips[rel_clip][1])
@@ -458,19 +459,17 @@ def read_if(output, condition, clip_size=5, scratch = DEFAULT_TEMP, threads=None
                     relevant_clips.add(rel_clip)
 
             boundaries.append((header_data['start'],header_data['end']))
-            
         if is_extern:
             vid_dir = read_ref_file(clip)
             vid_clip = None
             for f in os.listdir(vid_dir):
                 if f.endswith('.avi'):
                     vid_clip = os.path.join(vid_dir, f)
-            streams.append(VideoStream(vid_clip))
+            streams.append([VideoStream(vid_clip), header_data['start']])
         else:
-            streams.append(VideoStream(clip))
+            streams.append([VideoStream(clip), header_data['start']])
 
     #sort the list
     relevant_clips = sorted(list(relevant_clips))
-
     return [materialize_clip(clips[i], boundaries, streams) for i in relevant_clips]
 

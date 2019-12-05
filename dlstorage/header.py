@@ -54,8 +54,8 @@ class StorageHeader(Header):
 	"""
 
 	def __init__(self, keep_history = True):
-		self.last_accessed = -1
-		self.frequency = -1 # Note that frequency doesn't auto-update - requires a function to update it periodically
+		self.last_accessed = 0
+		self.frequency = 0 # Note that frequency doesn't auto-update - requires a function to update it periodically
 		self.frequency_start = datetime.now() # what time does frequency start counting onward's from?
 		self.keep_history = keep_history
 		if keep_history:
@@ -88,7 +88,7 @@ class StorageHeader(Header):
 		self.last_accessed = 0
 		self.frequency = 0
 		self.frequency_start = datetime.now()
-		if keep_history:
+		if self.keep_history:
 			self.access_list = []
 			self.access_start = datetime.now() 
 
@@ -103,8 +103,8 @@ class ObjectHeader(TimeHeader, StorageHeader):
 		self.label_set = set()
 		self.bounding_boxes = []
 		self.store_bounding_boxes = store_bounding_boxes
-		TimeHeader.__init__(offset)
-		StorageHeader.__init__(history)
+		TimeHeader.__init__(self, offset)
+		StorageHeader.__init__(self, history)
 
 	#handle the update
 	def update(self, frame):
@@ -117,7 +117,7 @@ class ObjectHeader(TimeHeader, StorageHeader):
 		if self.store_bounding_boxes:
 			self.bounding_boxes.append(frame['tags'])
 
-		TimeHeader.update(frame)
+		TimeHeader.update(self, frame)
 
 	def getHeader(self):
 		llist = sorted(list(self.label_set))
@@ -130,11 +130,11 @@ class ObjectHeader(TimeHeader, StorageHeader):
 				'access_frequency': self.frequency,
 				'frequency_start':self.frequency_start,
 				'access_history': self.access_list,
-				'access_history_start': access_start}
+				'access_history_start': self.access_start}
 
 	def reset(self):
 		self.label_set = set()
 		self.bounding_boxes = []
-		TimeHeader.reset()
-		StorageHeader.reset()
+		TimeHeader.reset(self)
+		StorageHeader.reset(self)
 

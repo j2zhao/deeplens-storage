@@ -57,7 +57,9 @@ def materialize_clip(clip, boundaries, streams):
 
 	for crop in execution_plan:
 		index, bounds = crop
-		subiterators.append(streams[index][Cut(*bounds)])
+		start = streams[index][1]
+		bounds2 = (bounds[0] - start, bounds[1] - start)
+		subiterators.append(streams[index][0][Cut(*bounds2)])
 
 	#v = VideoTransform()
 	return itertools.chain(*subiterators)
@@ -81,7 +83,13 @@ def cut_header(header, start, end):
 	return {'start': start, 
 			'end': end, 
 			'label_set': list(label_set), 
-			'bounding_boxes': bounding_boxes}
+			'bounding_boxes': bounding_boxes,
+			'last_accessed': header['last_accessed'],
+			'access_frequency': header['access_frequency'],
+			'frequency_start': header['frequency_start'],
+			'access_history': header['access_history'],
+			'access_history_start': header['access_history'],
+			'seq': header['seq']}
 
 			
 

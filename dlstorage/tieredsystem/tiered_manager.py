@@ -22,7 +22,7 @@ from dlstorage.error import *
 
 import os
 
-DEFAULT_ARGS = {'encoding': MP4V, 'size': -1, 'limit': -1, 'sample': 1.0, 'offset': 0}
+DEFAULT_ARGS = {'encoding': MP4V, 'size': 50, 'limit': -1, 'sample': 1.0, 'offset': 0}
 
 
 class TieredStorageManager(StorageManager):

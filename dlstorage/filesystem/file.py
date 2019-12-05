@@ -93,7 +93,7 @@ def write_block_full_path(data, path):
 	pickle.dump(data, f)
 
 	f.close()
-	return file_name
+	return path
 
 
 def read_block(file):
