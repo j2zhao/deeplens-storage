@@ -96,7 +96,9 @@ class StorageHeader(Header):
 class ObjectHeader(TimeHeader, StorageHeader):
 
 	"""ObjectHeader keeps track of what objects show up in
-	a clip. It also keeps track of time inheriting from TimeHeader
+	a clip, and the
+	It also keeps track of time inheriting from TimeHeader,
+	and storage access inheriting from StorageHeader.
 	"""
 
 	def __init__(self, store_bounding_boxes=True, offset=0, history = True):

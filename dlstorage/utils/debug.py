@@ -8,6 +8,7 @@ performance.
 from dlstorage.xform import VideoTransform
 from dlstorage.filesystem.file import add_ext
 
+
 import random
 import string
 import time
@@ -50,7 +51,7 @@ class TestTagger(VideoTransform):
 	def __init__(self):
 		super(TestTagger, self).__init__()
 
-	def _get_tags(self, img):
+	def _get_tags(self):
 		tags = []
 
 		for i in range(10):
@@ -65,5 +66,23 @@ class TestTagger(VideoTransform):
 
 	def __next__(self):
 		out = next(self.input_iter)
-		out['tags'] = self._get_tags(out['data'])
+		out['tags'] = self._get_tags()
+		return out
+
+
+""" Creates dummy splits/crops without optimization
+"""
+class TestSplitter(VideoTransform):
+	def __init__(self):
+		super(TestSplitter, self).__init__()
+
+	def __next__(self):
+		out = next(self.input_iter)
+		if out['frame']%50 == 0:
+			cr = (0,0, int(0.5*self.vstream.width), int(0.5*self.vstream.height))
+			out['crop'] = [cr] # denote a list of crops if present
+			out['split'] = True # split the video at this point
+		else:
+			out['crop'] = [] # denote a list of crops if present
+			out['split'] = False # split the video at this point
 		return out

@@ -6,6 +6,7 @@ This file contains a bunch of primitives for manipulating clip boundaries.
 """
 
 import itertools
+import copy
 
 from dlstorage.xform import VideoTransform, Cut
 
@@ -79,17 +80,34 @@ def cut_header(header, start, end):
 	for frame in bounding_boxes:
 		for label, bb in frame:
 			label_set.add(label)
+	new_header = copy.deepcopy(header)
+	new_header['start'] = start
+	new_header['end'] = end
+	new_header['label_set'] = list(label_set)
+	new_header['bounding_boxes'] = bounding_boxes
+	return new_header
 
-	return {'start': start, 
-			'end': end, 
-			'label_set': list(label_set), 
-			'bounding_boxes': bounding_boxes,
-			'last_accessed': header['last_accessed'],
-			'access_frequency': header['access_frequency'],
-			'frequency_start': header['frequency_start'],
-			'access_history': header['access_history'],
-			'access_history_start': header['access_history'],
-			'seq': header['seq']}
+def crop_overlap(crop, bb):
+	''' Check if crop and box are overlapping
+	'''
+	if max(crop[0], crop[2]) >= min(bb[0], bb[2])  and  max(bb[0], bb[2]) >= min(crop[0], crop[2]):
+		if max(crop[1], crop[3]) >= min(bb[1], bb[3]) and  max(bb[1], bb[3]) >= min(crop[1], crop[3]):
+			return True
+	else:
+		return False
 
-			
+def crop_header(header, crop):
+	label_set = set()
+	bound_box_crop = []
+	bounding_boxes = header['bounding_boxes']
+	for frame in bounding_boxes:
+		for label, bb in frame:
+			overlap = crop_overlap(crop, bb)
+			if overlap:
+				label_set.add(label)
+				bound_box_crop.append((label, bb))
 
+	new_header = copy.deepcopy(header)
+	new_header['label_set'] = list(label_set)
+	new_header['bounding_boxes'] = bound_box_crop
+	return new_header

@@ -23,16 +23,16 @@ def test_f(header):
     else:
         return False
 def main():
-    manager = TieredStorageManager(TestTagger(), STORAGE_DIRECTORY, EXTERNAL_DIRECTORY)
-    manager.put(VID_DIRECTORY, 'test')
+    manager = TieredStorageManager(TestTagger(), TestSplitter(), STORAGE_DIRECTORY, EXTERNAL_DIRECTORY)
+    #manager.put(VID_DIRECTORY, 'test')
     
-    #manager.put(VID_DIRECTORY, 'test_e', in_extern_storage = True)
+    manager.put(VID_DIRECTORY, 'test_e', in_extern_storage = True)
     
     #list_of_clips = manager.get('test_e', lambda x: True, 5)
-    list_of_clips = manager.get('test', lambda x: True, 5)
-    list_of_clips = manager.get('test', test_f, 5)
+    #list_of_clips = manager.get('test', lambda x: True, 5)
+    #list_of_clips = manager.get('test', test_f, 5)
     #manager.moveToExtern('test_e', lambda x: True)
-    storage_partition(manager)
+    #storage_partition(manager)
     #play(itertools.chain(*list_of_clips))
     # do delete with internal + external
     #manager.delete('test')

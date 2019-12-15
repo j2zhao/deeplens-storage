@@ -22,8 +22,9 @@ from dlstorage.error import *
 
 import os
 
-DEFAULT_ARGS = {'encoding': MP4V, 'size': 50, 'limit': -1, 'sample': 1.0, 'offset': 0}
+DEFAULT_ARGS = {'encoding': MP4V, 'size': -1, 'limit': -1, 'sample': 1.0, 'offset': 0, 'auto_split': True}
 
+# TODO: Fix clip storage so that it can happen at an intelligent level
 
 class TieredStorageManager(StorageManager):
     """ TieredStorageManager is the implementation of a 3 tiered
@@ -31,10 +32,9 @@ class TieredStorageManager(StorageManager):
     is in the same location as disk, and external storage is another
     directory
     """
-    def __init__(self, content_tagger, basedir, externdir):
-        #JJ Note: content_tagger is consistent through a video
-        #JJ Note: we don't really have a way of tagging applied to video
+    def __init__(self, content_tagger, content_splitter, basedir, externdir):
         self.content_tagger = content_tagger
+        self.content_splitter = content_splitter
         self.basedir = basedir
         self.externdir = externdir
         self.videos = set()
@@ -69,10 +69,17 @@ class TieredStorageManager(StorageManager):
             physical_video = None
         
         if args['size'] == -1:
-            write_video(v, \
+            if args['auto_split']:
+                v = v[self.content_splitter]
+                write_video_auto(v, \
                         physical_clip, args['encoding'], \
                         ObjectHeader(offset=args['offset']),
                         output_extern = physical_video )
+            else:
+                write_video(v, \
+                            physical_clip, args['encoding'], \
+                            ObjectHeader(offset=args['offset']),
+                            output_extern = physical_video )
         else:
             write_video_clips(v, \
                               physical_clip, \
@@ -82,7 +89,6 @@ class TieredStorageManager(StorageManager):
                               output_extern = physical_video )
         
         self.videos.add(target)
-    
 
     def get(self, name, condition, clip_size):
         """retrievies a clip of a certain size satisfying the condition.
